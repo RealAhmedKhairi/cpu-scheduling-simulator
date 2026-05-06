@@ -107,6 +107,9 @@ Displays all added processes with columns:
 - Priority
 
 Rows are editable by double-clicking.
+<img width="1104" height="845" alt="image" src="https://github.com/user-attachments/assets/e761a9bf-0233-43e7-b529-289312b49273" />
+<img width="1104" height="845" alt="image" src="https://github.com/user-attachments/assets/ca325953-548f-40a6-94de-2374a0a7ff72" />
+
 
 ## Gantt Charts
 
@@ -180,6 +183,8 @@ A read-only conclusion area summarizes:
 - `P1`: arrival=2, burst=4, priority=2
 
 This scenario demonstrates invalid input handling.
+<img width="1104" height="845" alt="image" src="https://github.com/user-attachments/assets/2ff560e4-6fcf-4b53-852d-07b7f2418b80" />
+
 
 ## Scheduler Behavior
 
@@ -196,6 +201,9 @@ This scenario demonstrates invalid input handling.
 - Chooses the ready process with the highest priority (lowest numeric value) each time unit
 - Preempts the current process if a higher-priority process arrives
 - Returns a timeline and metrics for each process
+
+<img width="1104" height="845" alt="image" src="https://github.com/user-attachments/assets/dbac2f2c-d642-41f3-85a7-9c65c3e2dba2" />
+<img width="1104" height="845" alt="image" src="https://github.com/user-attachments/assets/e2a3b93a-c489-486a-ac30-e25631a00f43" />
 
 ## Notes
 
