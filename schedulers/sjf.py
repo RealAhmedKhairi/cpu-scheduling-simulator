@@ -1,64 +1,69 @@
 import copy
 
 
-def run_srtf(processes):
+def run_sjf(processes, preemptive=True):
+    """Run preemptive Shortest Job First (SRTF) scheduling.
 
+    Args:
+        processes: list of Process objects.
+        preemptive: ignored for this implementation; the scheduler is always preemptive.
+
+    Returns:
+        tuple: (timeline, results) where timeline is a list of (pid, start, end)
+        segments and results is a deep-copied list of Process objects with metrics.
+    """
     ps = copy.deepcopy(processes)
-    
+    n = len(ps)
+    if n == 0:
+        return [], []
+
     for p in ps:
         p.remaining = p.burst
-        p.start = -1  
+        p.start = -1
         p.finish = 0
         p.waiting = 0
         p.turnaround = 0
-        p.response_time = 0
+        p.response_time = -1
 
-    timeline = []
     current_time = 0
     completed = 0
-    
+    timeline = []
     current_pid = None
-    chunk_start = 0
-    
-    while completed < len(ps):
+    segment_start = 0
+
+    while completed < n:
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
-        
+
         if not available:
-            if current_pid != "idle":
+            next_arrival = min(
+                (p.arrival for p in ps if p.remaining > 0 and p.arrival > current_time),
+                default=None,
+            )
+            if current_pid != "Idle":
                 if current_pid is not None:
-                    timeline.append((current_pid, chunk_start, current_time))
-                current_pid = "idle"
-                chunk_start = current_time
-            
-            next_arrivals = [p.arrival for p in ps if p.arrival > current_time]
-            current_time = min(next_arrivals)
+                    timeline.append((current_pid, segment_start, current_time))
+                current_pid = "Idle"
+                segment_start = current_time
+            if next_arrival is None:
+                break
+            current_time = next_arrival
             continue
-            
-        available.sort(key=lambda x: (x.remaining, x.arrival, x.id))
-        selected = available[0]
-        
-        pid_string = f"P{selected.id}"
-        
-        if current_pid != pid_string:
+
+        selected = min(available, key=lambda p: (p.remaining, p.arrival, p.pid))
+
+        if current_pid != selected.pid:
             if current_pid is not None:
-                timeline.append((current_pid, chunk_start, current_time))
-            current_pid = pid_string
-            chunk_start = current_time
-            
+                timeline.append((current_pid, segment_start, current_time))
+            current_pid = selected.pid
+            segment_start = current_time
+
         if selected.start == -1:
             selected.start = current_time
-            selected.response_time = selected.start - selected.arrival 
-            
-        next_arrivals = [p.arrival for p in ps if p.arrival > current_time]
-        next_arrival_time = min(next_arrivals) if next_arrivals else float('inf')
-        
-        run_time = min(selected.remaining, next_arrival_time - current_time)
-        if run_time == 0: 
-            run_time = 1
-            
-        selected.remaining -= run_time
-        current_time += run_time
-        
+            selected.response_time = current_time - selected.arrival
+
+        selected.remaining -= 1
+        current_time += 1
+
         if selected.remaining == 0:
             selected.finish = current_time
             selected.turnaround = selected.finish - selected.arrival
@@ -66,6 +71,6 @@ def run_srtf(processes):
             completed += 1
 
     if current_pid is not None:
-        timeline.append((current_pid, chunk_start, current_time))
-        
+        timeline.append((current_pid, segment_start, current_time))
+
     return timeline, ps
