@@ -8,4 +8,4 @@ class Process:
         this.finish = 0
         this.waiting = 0
         this.turnaround = 0
-        this.response_time = 0 
+        this.response_time = -1 
