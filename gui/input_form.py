@@ -34,12 +34,8 @@ class InputPanel(ttk.LabelFrame):
         mode_frame.grid(row=1, column=0, columnspan=8, sticky="w", padx=5, pady=5)
         
         ttk.Label(mode_frame, text="SJF Mode:", **label_config).grid(row=0, column=0, sticky="w", padx=(0, 10))
-        ttk.Radiobutton(mode_frame, text="SJF (Non-preemptive)", variable=self.sjf_preemptive, value=False).grid(row=0, column=1, padx=5)
-        ttk.Radiobutton(mode_frame, text="SRJF (Preemptive)", variable=self.sjf_preemptive, value=True).grid(row=0, column=2, padx=5)
-
-        ttk.Label(mode_frame, text="Priority Mode:", **label_config).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=(5, 0))
-        ttk.Radiobutton(mode_frame, text="Non-preemptive", variable=self.priority_preemptive, value=False).grid(row=1, column=1, padx=5, pady=(5, 0))
-        ttk.Radiobutton(mode_frame, text="Preemptive", variable=self.priority_preemptive, value=True).grid(row=1, column=2, padx=5, pady=(5, 0))
+        ttk.Radiobutton(mode_frame, text="SJF (Non-preemptive)", variable=self.sjf_preemptive, value=False, command=lambda: self.priority_preemptive.set(True)).grid(row=0, column=1, padx=5)
+        ttk.Radiobutton(mode_frame, text="SRJF (Preemptive)", variable=self.sjf_preemptive, value=True, command=lambda: self.priority_preemptive.set(True)).grid(row=0, column=2, padx=5)
 
         ttk.Button(self, text="Add Process", command=on_add).grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky="ew")
         ttk.Button(self, text="Remove Process", command=on_remove).grid(row=2, column=2, columnspan=2, padx=5, pady=10, sticky="ew")
