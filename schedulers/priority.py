@@ -11,11 +11,13 @@ def run_priority(processes, preemptive=True):
     Returns:
         tuple: (timeline, results)
     """
+    # Rule: Always deepcopy
     ps = copy.deepcopy(processes)
     n = len(ps)
     if n == 0:
         return [], []
 
+    # Rule: Reset remaining and metrics at the start
     for p in ps:
         p.remaining = p.burst
         p.start = -1
@@ -32,6 +34,7 @@ def run_priority(processes, preemptive=True):
     active_process = None
 
     while completed < n:
+        # Rule: Handle the idle gap
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
 
         if not available:
@@ -39,25 +42,29 @@ def run_priority(processes, preemptive=True):
                 (p.arrival for p in ps if p.remaining > 0 and p.arrival > current_time),
                 default=None,
             )
+            
             if current_pid != "Idle":
                 if current_pid is not None:
-                    timeline.append((current_pid, segment_start, current_time))
+                    timeline.append((str(current_pid), segment_start, current_time))
                 current_pid = "Idle"
                 segment_start = current_time
+            
             if next_arrival is None:
                 break
             current_time = next_arrival
             continue
 
+        # Priority Selection Logic
         if preemptive or active_process is None or active_process.remaining == 0:
             selected = min(available, key=lambda p: (p.priority, p.arrival, p.pid))
             active_process = selected
         else:
             selected = active_process
 
+        # Rule: Timeline segments sorted by start time and PIDs as strings
         if current_pid != selected.pid:
             if current_pid is not None:
-                timeline.append((current_pid, segment_start, current_time))
+                timeline.append((str(current_pid), segment_start, current_time))
             current_pid = selected.pid
             segment_start = current_time
 
@@ -69,6 +76,7 @@ def run_priority(processes, preemptive=True):
         current_time += 1
 
         if selected.remaining == 0:
+            # Rule: Fill in all four fields
             selected.finish = current_time
             selected.turnaround = selected.finish - selected.arrival
             selected.waiting = selected.turnaround - selected.burst
@@ -76,6 +84,6 @@ def run_priority(processes, preemptive=True):
             active_process = None
 
     if current_pid is not None:
-        timeline.append((current_pid, segment_start, current_time))
+        timeline.append((str(current_pid), segment_start, current_time))
 
     return timeline, ps

@@ -1,125 +1,97 @@
-import sys
+import copy
 
-class Util:
-    def __init__(self):
-        self.id = 0
-        self.at = 0
-        self.bt = 0
-        self.ct = 0
-        self.tat = 0
-        self.wt = 0
 
-ar = [Util() for _ in range(100001)]
+def run_sjf_non_preemptive(processes):
+    """Run Non-preemptive Shortest Job First (SJF) scheduling.
+    This implementation follows all strict rules for the simulator.
+    """
+    # Rule: Always deepcopy
+    ps = copy.deepcopy(processes)
+    n = len(ps)
+    if n == 0:
+        return [], []
 
-class Util1:
-    def __init__(self):
-        self.p_id = 0
-        self.bt1 = 0
+    # Rule: Reset remaining and metrics
+    for p in ps:
+        p.remaining = p.burst
+        p.start = -1
+        p.finish = 0
+        p.waiting = 0
+        p.turnaround = 0
+        p.response_time = -1
 
-tr = [Util1() for _ in range(4 * 100001 + 5)]
+    current_time = 0
+    completed = 0
+    timeline = []
+    current_pid = None
+    segment_start = 0
 
-mp = [0] * (100001)
+    while completed < n:
+        # Rule: Handle the idle gap
+        available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
 
-def update(node, st, end, ind, id1, b_t):
-    if st == end:
-        tr[node].p_id = id1
-        tr[node].bt1 = b_t
-        return
-    mid = (st + end) // 2
-    if ind <= mid:
-        update(2 * node, st, mid, ind, id1, b_t)
-    else:
-        update(2 * node + 1, mid + 1, end, ind, id1, b_t)
-    if tr[2 * node].bt1 < tr[2 * node + 1].bt1:
-        tr[node].bt1 = tr[2 * node].bt1
-        tr[node].p_id = tr[2 * node].p_id
-    else:
-        tr[node].bt1 = tr[2 * node + 1].bt1
-        tr[node].p_id = tr[2 * node + 1].p_id
-
-def query(node, st, end, lt, rt):
-    range = Util1()
-    if end < lt or st > rt:
-        return range
-    if st >= lt and end <= rt:
-        return tr[node]
-    mid = (st + end) // 2
-    lm = query(2 * node, st, mid, lt, rt)
-    rm = query(2 * node + 1, mid + 1, end, lt, rt)
-    if lm.bt1 < rm.bt1:
-        return lm
-    return rm
-
-def non_preemptive_sjf(n):
-    counter = n
-
-    upper_range = 0
-
-    tm = min(sys.maxsize, ar[upper_range + 1].at)
-
-    while counter != 0:
-        for _ in range(upper_range + 1):
-            upper_range += 1
-            if ar[upper_range].at > tm or upper_range > n:
-                upper_range -= 1
+        if not available:
+            next_arrival = min(
+                (p.arrival for p in ps if p.remaining > 0 and p.arrival > current_time),
+                default=None,
+            )
+            
+            if current_pid != "Idle":
+                if current_pid is not None:
+                    timeline.append((str(current_pid), segment_start, current_time))
+                current_pid = "Idle"
+                segment_start = current_time
+            
+            if next_arrival is None:
                 break
-            update(1, 1, n, upper_range, ar[upper_range].id, ar[upper_range].bt)
+            current_time = next_arrival
+            continue
 
-        res = query(1, 1, n, 1, upper_range)
+        # Rule: Non-preemptive selection (shortest burst)
+        selected = min(available, key=lambda p: (p.burst, p.arrival, p.pid))
 
-        if res.bt1 != sys.maxsize:
-            counter -= 1
-            index = mp[res.p_id]
-            tm += res.bt1
+        # Rule: Timeline segments sorted by start time and PIDs as strings
+        if current_pid != selected.pid:
+            if current_pid is not None:
+                timeline.append((str(current_pid), segment_start, current_time))
+            current_pid = selected.pid
+            segment_start = current_time
 
-            ar[index].ct = tm
-            ar[index].tat = ar[index].ct - ar[index].at
-            ar[index].wt = ar[index].tat - ar[index].bt
+        # Rule: Fill in all four fields
+        selected.start = current_time
+        selected.response_time = current_time - selected.arrival
+        
+        # Advance time by the full burst (non-preemptive)
+        current_time += selected.burst
+        selected.remaining = 0
+        
+        selected.finish = current_time
+        selected.turnaround = selected.finish - selected.arrival
+        selected.waiting = selected.turnaround - selected.burst
+        completed += 1
 
-            update(1, 1, n, index, sys.maxsize, sys.maxsize)
-        else:
-            tm = ar[upper_range + 1].at
+    if current_pid is not None:
+        timeline.append((str(current_pid), segment_start, current_time))
 
-def execute(n):
-    ar[1:n + 1] = sorted(ar[1:n + 1], key=lambda x: (x.at, x.id))
-    for i in range(1, n + 1):
-        mp[ar[i].id] = i
+    return timeline, ps
 
-    non_preemptive_sjf(n)
-
-def print_result(n):
-    print("ProcessId Arrival Time Burst Time" +
-          " Completion Time Turn Around Time Waiting Time")
-    for i in range(1, n + 1):
-        print(f"{ar[i].id}\t\t{ar[i].at}\t\t{ar[i].bt}\t\t{ar[i].ct}\t\t{ar[i].tat}\t\t{ar[i].wt}")
 
 if __name__ == "__main__":
-    n = 5
-
-    for i in range(1, 4 * 100001 + 2):
-        tr[i].p_id = sys.maxsize
-        tr[i].bt1 = sys.maxsize
-
-    ar[1].at = 1
-    ar[1].bt = 7
-    ar[1].id = 1
-
-    ar[2].at = 2
-    ar[2].bt = 5
-    ar[2].id = 2
-
-    ar[3].at = 3
-    ar[3].bt = 1
-    ar[3].id = 3
-
-    ar[4].at = 4
-    ar[4].bt = 2
-    ar[4].id = 4
-
-    ar[5].at = 5
-    ar[5].bt = 8
-    ar[5].id = 5
-
-    execute(n)
-
-    print_result(n)
+    # Test script similar to what was in sjfNon.py but following new rules
+    from process import Process
+    
+    test_processes = [
+        Process(1, 1, 7),
+        Process(2, 2, 5),
+        Process(3, 3, 1),
+        Process(4, 4, 2),
+        Process(5, 5, 8),
+    ]
+    
+    timeline, results = run_sjf_non_preemptive(test_processes)
+    
+    print("ProcessId Arrival Time Burst Time Completion Time Turn Around Time Waiting Time")
+    for p in sorted(results, key=lambda x: x.pid):
+        print(f"{p.pid}\t\t{p.arrival}\t\t{p.burst}\t\t{p.finish}\t\t{p.turnaround}\t\t{p.waiting}")
+    
+    print("\nTimeline:", timeline)
