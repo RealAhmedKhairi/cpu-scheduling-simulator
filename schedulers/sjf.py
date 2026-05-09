@@ -2,11 +2,11 @@ import copy
 
 
 def run_sjf(processes, preemptive=True):
-    """Run preemptive Shortest Job First (SRTF) scheduling.
+    """Run Shortest Job First (SJF) scheduling.
 
     Args:
         processes: list of Process objects.
-        preemptive: ignored for this implementation; the scheduler is always preemptive.
+        preemptive: if True, runs SRJF (preemptive); if False, runs SJF (non-preemptive).
 
     Returns:
         tuple: (timeline, results) where timeline is a list of (pid, start, end)
@@ -30,6 +30,7 @@ def run_sjf(processes, preemptive=True):
     timeline = []
     current_pid = None
     segment_start = 0
+    active_process = None
 
     while completed < n:
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
@@ -49,7 +50,11 @@ def run_sjf(processes, preemptive=True):
             current_time = next_arrival
             continue
 
-        selected = min(available, key=lambda p: (p.remaining, p.arrival, p.pid))
+        if preemptive or active_process is None or active_process.remaining == 0:
+            selected = min(available, key=lambda p: (p.remaining, p.arrival, p.pid))
+            active_process = selected
+        else:
+            selected = active_process
 
         if current_pid != selected.pid:
             if current_pid is not None:
@@ -69,6 +74,7 @@ def run_sjf(processes, preemptive=True):
             selected.turnaround = selected.finish - selected.arrival
             selected.waiting = selected.turnaround - selected.burst
             completed += 1
+            active_process = None
 
     if current_pid is not None:
         timeline.append((current_pid, segment_start, current_time))

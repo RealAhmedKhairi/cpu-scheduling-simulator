@@ -1,11 +1,12 @@
 # CPU Scheduling Simulator
 
-A Python desktop application built with `tkinter` that compares preemptive Shortest Job First (SJF / SRTF) and preemptive Priority Scheduling.
+A Python desktop application built with `tkinter` that compares Shortest Job First (SJF / SRJF) and Priority Scheduling (Preemptive / Non-preemptive).
 
 ## Features
 
 - Add, edit, and remove processes using an input panel
-- Run both SJF and Priority scheduling simultaneously
+- Support for both Preemptive (SRJF/Priority) and Non-preemptive (SJF/Priority) modes
+- Run both algorithms simultaneously
 - View separate Gantt charts for each algorithm
 - Display per-process metrics and averages
 - Compare average waiting time, turnaround time, and response time side-by-side

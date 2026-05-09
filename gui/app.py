@@ -123,16 +123,16 @@ class App:
         scrollbar.grid(row=0, column=1, sticky="ns")
 
     def _build_sjf_section(self):
-        frame = ttk.LabelFrame(self.content_frame, text="Shortest Job First", padding=10)
-        frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
-        frame.columnconfigure(0, weight=1)
+        self.sjf_frame = ttk.LabelFrame(self.content_frame, text="Shortest Remaining Job First (SRJF)", padding=10)
+        self.sjf_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
+        self.sjf_frame.columnconfigure(0, weight=1)
 
-        self.sjf_canvas = tk.Canvas(frame, height=180, background="white", bd=1, relief="solid")
+        self.sjf_canvas = tk.Canvas(self.sjf_frame, height=180, background="white", bd=1, relief="solid")
         self.sjf_canvas.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         self.sjf_canvas.bind("<Configure>", lambda event: self._draw_gantt_sections())
 
         self.sjf_result_tree = ttk.Treeview(
-            frame,
+            self.sjf_frame,
             columns=("PID", "Arrival", "Burst", "Priority", "Start", "Finish", "Waiting", "Turnaround", "Response"),
             show="headings",
             height=6,
@@ -143,22 +143,22 @@ class App:
             self.sjf_result_tree.column(col, width=100, anchor="center")
         self.sjf_result_tree.tag_configure("avg", font=("Arial", 10, "bold"))
 
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.sjf_result_tree.yview)
+        scrollbar = ttk.Scrollbar(self.sjf_frame, orient="vertical", command=self.sjf_result_tree.yview)
         self.sjf_result_tree.configure(yscrollcommand=scrollbar.set)
         self.sjf_result_tree.grid(row=1, column=0, sticky="nsew")
         scrollbar.grid(row=1, column=1, sticky="ns")
 
     def _build_priority_section(self):
-        frame = ttk.LabelFrame(self.content_frame, text="Priority Scheduling", padding=10)
-        frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=10)
-        frame.columnconfigure(0, weight=1)
+        self.priority_frame = ttk.LabelFrame(self.content_frame, text="Preemptive Priority Scheduling", padding=10)
+        self.priority_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=10)
+        self.priority_frame.columnconfigure(0, weight=1)
 
-        self.priority_canvas = tk.Canvas(frame, height=180, background="white", bd=1, relief="solid")
+        self.priority_canvas = tk.Canvas(self.priority_frame, height=180, background="white", bd=1, relief="solid")
         self.priority_canvas.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         self.priority_canvas.bind("<Configure>", lambda event: self._draw_gantt_sections())
 
         self.priority_result_tree = ttk.Treeview(
-            frame,
+            self.priority_frame,
             columns=("PID", "Arrival", "Burst", "Priority", "Start", "Finish", "Waiting", "Turnaround", "Response"),
             show="headings",
             height=6,
@@ -169,7 +169,7 @@ class App:
             self.priority_result_tree.column(col, width=100, anchor="center")
         self.priority_result_tree.tag_configure("avg", font=("Arial", 10, "bold"))
 
-        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.priority_result_tree.yview)
+        scrollbar = ttk.Scrollbar(self.priority_frame, orient="vertical", command=self.priority_result_tree.yview)
         self.priority_result_tree.configure(yscrollcommand=scrollbar.set)
         self.priority_result_tree.grid(row=1, column=0, sticky="nsew")
         scrollbar.grid(row=1, column=1, sticky="ns")
@@ -182,8 +182,10 @@ class App:
 
         header_style = {"font": ("Arial", 10, "bold")}
         ttk.Label(frame, text="Metric", **header_style).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        ttk.Label(frame, text="SJF", **header_style).grid(row=0, column=1, sticky="w", padx=5, pady=5)
-        ttk.Label(frame, text="Priority", **header_style).grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        self.sjf_comparison_label = ttk.Label(frame, text="SRJF", **header_style)
+        self.sjf_comparison_label.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        self.priority_comparison_label = ttk.Label(frame, text="Priority (P)", **header_style)
+        self.priority_comparison_label.grid(row=0, column=2, sticky="w", padx=5, pady=5)
 
         metrics = ["Average Waiting Time", "Average Turnaround Time", "Average Response Time"]
         keys = ["waiting", "turnaround", "response"]
@@ -320,17 +322,31 @@ class App:
 
     def run_simulation(self):
         try:
+            input_data = self.input_panel.get_input()
             process_rows = self.get_process_list()
         except ValueError as error:
             messagebox.showerror("Validation Error", str(error))
             return
 
+        sjf_preemptive = input_data["sjf_preemptive"]
+        sjf_mode_name = "SRJF" if sjf_preemptive else "SJF"
+        sjf_full_name = "Shortest Remaining Job First (SRJF)" if sjf_preemptive else "Shortest Job First (SJF)"
+
+        priority_preemptive = input_data["priority_preemptive"]
+        priority_mode_name = "Priority (P)" if priority_preemptive else "Priority (NP)"
+        priority_full_name = "Preemptive Priority Scheduling" if priority_preemptive else "Non-preemptive Priority Scheduling"
+
+        self.sjf_frame.configure(text=sjf_full_name)
+        self.sjf_comparison_label.configure(text=sjf_mode_name)
+        self.priority_frame.configure(text=priority_full_name)
+        self.priority_comparison_label.configure(text=priority_mode_name)
+
         processes = [Process(row["pid"], row["arrival"], row["burst"], row["priority"]) for row in process_rows]
 
-        sjf_timeline, sjf_results = self._safe_run_scheduler(run_sjf, processes, "SJF")
+        sjf_timeline, sjf_results = self._safe_run_scheduler(lambda ps, p: run_sjf(ps, preemptive=p), processes, sjf_mode_name, sjf_preemptive)
         if sjf_timeline is None:
             return
-        priority_timeline, priority_results = self._safe_run_scheduler(run_priority, processes, "Priority")
+        priority_timeline, priority_results = self._safe_run_scheduler(lambda ps, p: run_priority(ps, preemptive=p), processes, priority_mode_name, priority_preemptive)
         if priority_timeline is None:
             return
 
@@ -340,13 +356,13 @@ class App:
         self.latest_pid_colors = pid_colors
         self._populate_results(self.sjf_result_tree, sjf_results, pid_colors)
         self._populate_results(self.priority_result_tree, priority_results, pid_colors)
-        self._draw_gantt_sections(sjf_timeline, priority_timeline, pid_colors)
+        self._draw_gantt_sections(sjf_timeline, priority_timeline, pid_colors, sjf_mode_name, priority_mode_name)
         self._update_comparison(sjf_results, priority_results)
-        self._update_conclusion(sjf_results, priority_results)
+        self._update_conclusion(sjf_results, priority_results, sjf_mode_name, priority_mode_name)
 
-    def _safe_run_scheduler(self, func, processes, name):
+    def _safe_run_scheduler(self, func, processes, name, *args):
         try:
-            result = func(processes, preemptive=True)
+            result = func(processes, *args)
         except Exception as exc:
             messagebox.showerror("Simulation Error", f"{name} scheduler failed: {exc}")
             return None, None
@@ -404,14 +420,14 @@ class App:
                 tags=("avg",),
             )
 
-    def _draw_gantt_sections(self, sjf_timeline=None, priority_timeline=None, pid_colors=None):
+    def _draw_gantt_sections(self, sjf_timeline=None, priority_timeline=None, pid_colors=None, sjf_name="SRJF", priority_name="Priority (P)"):
         sjf_timeline = sjf_timeline if sjf_timeline is not None else self.latest_sjf_timeline
         priority_timeline = priority_timeline if priority_timeline is not None else self.latest_priority_timeline
         pid_colors = pid_colors if pid_colors is not None else self.latest_pid_colors
         if sjf_timeline is not None and pid_colors is not None:
-            draw_gantt_chart(self.sjf_canvas, sjf_timeline, pid_colors, "Shortest Job First")
+            draw_gantt_chart(self.sjf_canvas, sjf_timeline, pid_colors, sjf_name)
         if priority_timeline is not None and pid_colors is not None:
-            draw_gantt_chart(self.priority_canvas, priority_timeline, pid_colors, "Priority Scheduling")
+            draw_gantt_chart(self.priority_canvas, priority_timeline, pid_colors, priority_name)
 
     def _update_comparison(self, sjf_results, priority_results):
         sjf_average = self._compute_averages(sjf_results)
@@ -442,36 +458,39 @@ class App:
             "response": sum(p.response_time for p in results) / count,
         }
 
-    def _update_conclusion(self, sjf_results, priority_results):
+    def _update_conclusion(self, sjf_results, priority_results, sjf_name="SRJF", priority_name="Priority (P)"):
         sjf_avg = self._compute_averages(sjf_results)
         priority_avg = self._compute_averages(priority_results)
         lines = []
 
         if sjf_avg["waiting"] < priority_avg["waiting"]:
-            lines.append("SJF has the lower average waiting time.")
+            lines.append(f"{sjf_name} has the lower average waiting time.")
         elif priority_avg["waiting"] < sjf_avg["waiting"]:
-            lines.append("Priority Scheduling has the lower average waiting time.")
+            lines.append(f"{priority_name} has the lower average waiting time.")
         else:
             lines.append("Both algorithms deliver the same average waiting time.")
 
         if sjf_avg["turnaround"] < priority_avg["turnaround"]:
-            lines.append("SJF achieves a lower average turnaround time.")
+            lines.append(f"{sjf_name} achieves a lower average turnaround time.")
         elif priority_avg["turnaround"] < sjf_avg["turnaround"]:
-            lines.append("Priority Scheduling achieves a lower average turnaround time.")
+            lines.append(f"{priority_name} achieves a lower average turnaround time.")
         else:
             lines.append("Both algorithms achieve the same average turnaround time.")
 
         if sjf_avg["response"] < priority_avg["response"]:
-            lines.append("SJF is more responsive on average.")
+            lines.append(f"{sjf_name} is more responsive on average.")
         elif priority_avg["response"] < sjf_avg["response"]:
-            lines.append("Priority Scheduling responds faster on average.")
+            lines.append(f"{priority_name} responds faster on average.")
         else:
             lines.append("Both algorithms have equal average response time.")
 
+        sjf_desc = "minimizing remaining burst time" if sjf_name == "SRJF" else "minimizing burst time"
+        priority_desc = "preempting for lower numeric priority values" if " (P)" in priority_name else "choosing the lowest numeric priority value"
+        
         lines.append(
-            "SJF focuses on efficiency by minimizing remaining burst time, while Priority Scheduling" \
-            " prioritizes urgency. In practice, SJF often reduces waiting and turnaround, but Priority" \
-            " Scheduling can better serve high-urgency tasks at the cost of possible lower-priority delays."
+            f"{sjf_name} focuses on efficiency by {sjf_desc}, while {priority_name}" \
+            f" prioritizes urgency by {priority_desc}. In practice, SJF/SRJF often reduces waiting and turnaround," \
+            f" but Priority Scheduling can better serve high-urgency tasks at the cost of possible lower-priority delays."
         )
 
         conclusion = "\n".join(lines)

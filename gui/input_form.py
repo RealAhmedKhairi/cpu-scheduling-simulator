@@ -9,6 +9,8 @@ class InputPanel(ttk.LabelFrame):
         self.arrival_var = tk.StringVar()
         self.burst_var = tk.StringVar()
         self.priority_var = tk.StringVar()
+        self.sjf_preemptive = tk.BooleanVar(value=True)
+        self.priority_preemptive = tk.BooleanVar(value=True)
 
         self._build_fields(on_add, on_remove, on_clear, on_run, on_scenario_selected)
 
@@ -27,13 +29,25 @@ class InputPanel(ttk.LabelFrame):
         ttk.Label(self, text="Priority:", **label_config).grid(row=0, column=6, sticky="w", padx=5, pady=4)
         ttk.Entry(self, textvariable=self.priority_var, width=12).grid(row=0, column=7, sticky="w", padx=5, pady=4)
 
-        ttk.Button(self, text="Add Process", command=on_add).grid(row=1, column=0, columnspan=2, padx=5, pady=10, sticky="ew")
-        ttk.Button(self, text="Remove Process", command=on_remove).grid(row=1, column=2, columnspan=2, padx=5, pady=10, sticky="ew")
-        ttk.Button(self, text="Clear All", command=on_clear).grid(row=1, column=4, columnspan=2, padx=5, pady=10, sticky="ew")
-        ttk.Button(self, text="Run Simulation", command=on_run).grid(row=1, column=6, columnspan=2, padx=5, pady=10, sticky="ew")
+        # Mode Toggles
+        mode_frame = ttk.Frame(self)
+        mode_frame.grid(row=1, column=0, columnspan=8, sticky="w", padx=5, pady=5)
+        
+        ttk.Label(mode_frame, text="SJF Mode:", **label_config).grid(row=0, column=0, sticky="w", padx=(0, 10))
+        ttk.Radiobutton(mode_frame, text="SJF (Non-preemptive)", variable=self.sjf_preemptive, value=False).grid(row=0, column=1, padx=5)
+        ttk.Radiobutton(mode_frame, text="SRJF (Preemptive)", variable=self.sjf_preemptive, value=True).grid(row=0, column=2, padx=5)
+
+        ttk.Label(mode_frame, text="Priority Mode:", **label_config).grid(row=1, column=0, sticky="w", padx=(0, 10), pady=(5, 0))
+        ttk.Radiobutton(mode_frame, text="Non-preemptive", variable=self.priority_preemptive, value=False).grid(row=1, column=1, padx=5, pady=(5, 0))
+        ttk.Radiobutton(mode_frame, text="Preemptive", variable=self.priority_preemptive, value=True).grid(row=1, column=2, padx=5, pady=(5, 0))
+
+        ttk.Button(self, text="Add Process", command=on_add).grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky="ew")
+        ttk.Button(self, text="Remove Process", command=on_remove).grid(row=2, column=2, columnspan=2, padx=5, pady=10, sticky="ew")
+        ttk.Button(self, text="Clear All", command=on_clear).grid(row=2, column=4, columnspan=2, padx=5, pady=10, sticky="ew")
+        ttk.Button(self, text="Run Simulation", command=on_run).grid(row=2, column=6, columnspan=2, padx=5, pady=10, sticky="ew")
 
         scenario_frame = ttk.Frame(self)
-        scenario_frame.grid(row=2, column=0, columnspan=8, sticky="ew", padx=5, pady=5)
+        scenario_frame.grid(row=3, column=0, columnspan=8, sticky="ew", padx=5, pady=5)
         for index in range(4):
             scenario_frame.columnconfigure(index, weight=1)
 
@@ -48,6 +62,8 @@ class InputPanel(ttk.LabelFrame):
             "arrival": self.arrival_var.get().strip(),
             "burst": self.burst_var.get().strip(),
             "priority": self.priority_var.get().strip(),
+            "sjf_preemptive": self.sjf_preemptive.get(),
+            "priority_preemptive": self.priority_preemptive.get(),
         }
 
     def clear_fields(self):
