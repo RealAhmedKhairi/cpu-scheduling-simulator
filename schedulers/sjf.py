@@ -2,23 +2,12 @@ import copy
 
 
 def run_sjf(processes, preemptive=True):
-    """Run Shortest Job First (SJF) scheduling.
 
-    Args:
-        processes: list of Process objects.
-        preemptive: if True, runs SRJF (preemptive); if False, runs SJF (non-preemptive).
-
-    Returns:
-        tuple: (timeline, results) where timeline is a list of (pid, start, end)
-        segments and results is a deep-copied list of Process objects with metrics.
-    """
-    # Rule: Always deepcopy
     ps = copy.deepcopy(processes)
     n = len(ps)
     if n == 0:
         return [], []
 
-    # Rule: Reset remaining and metrics at the start of every run
     for p in ps:
         p.remaining = p.burst
         p.start = -1
@@ -35,11 +24,9 @@ def run_sjf(processes, preemptive=True):
     active_process = None
 
     while completed < n:
-        # Rule: Handle the idle gap
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
 
         if not available:
-            # Advance time - don't infinite loop
             next_arrival = min(
                 (p.arrival for p in ps if p.remaining > 0 and p.arrival > current_time),
                 default=None,
@@ -56,14 +43,12 @@ def run_sjf(processes, preemptive=True):
             current_time = next_arrival
             continue
 
-        # SJF Selection Logic (SRJF if preemptive, SJF if non-preemptive)
         if preemptive or active_process is None or active_process.remaining == 0:
             selected = min(available, key=lambda p: (p.remaining, p.arrival, p.pid))
             active_process = selected
         else:
             selected = active_process
 
-        # Rule: Timeline segments must be strings and sorted by start time
         if current_pid != selected.pid:
             if current_pid is not None:
                 timeline.append((str(current_pid), segment_start, current_time))
@@ -78,14 +63,12 @@ def run_sjf(processes, preemptive=True):
         current_time += 1
 
         if selected.remaining == 0:
-            # Rule: Fill in all four fields (and response_time)
             selected.finish = current_time
             selected.turnaround = selected.finish - selected.arrival
             selected.waiting = selected.turnaround - selected.burst
             completed += 1
             active_process = None
 
-    # Append last segment
     if current_pid is not None:
         timeline.append((str(current_pid), segment_start, current_time))
 

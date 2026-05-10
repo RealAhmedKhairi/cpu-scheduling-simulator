@@ -2,16 +2,12 @@ import copy
 
 
 def run_sjf_non_preemptive(processes):
-    """Run Non-preemptive Shortest Job First (SJF) scheduling.
-    This implementation follows all strict rules for the simulator.
-    """
-    # Rule: Always deepcopy
+
     ps = copy.deepcopy(processes)
     n = len(ps)
     if n == 0:
         return [], []
 
-    # Rule: Reset remaining and metrics
     for p in ps:
         p.remaining = p.burst
         p.start = -1
@@ -27,7 +23,6 @@ def run_sjf_non_preemptive(processes):
     segment_start = 0
 
     while completed < n:
-        # Rule: Handle the idle gap
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
 
         if not available:
@@ -47,21 +42,17 @@ def run_sjf_non_preemptive(processes):
             current_time = next_arrival
             continue
 
-        # Rule: Non-preemptive selection (shortest burst)
         selected = min(available, key=lambda p: (p.burst, p.arrival, p.pid))
 
-        # Rule: Timeline segments sorted by start time and PIDs as strings
         if current_pid != selected.pid:
             if current_pid is not None:
                 timeline.append((str(current_pid), segment_start, current_time))
             current_pid = selected.pid
             segment_start = current_time
-
-        # Rule: Fill in all four fields
+        
         selected.start = current_time
         selected.response_time = current_time - selected.arrival
         
-        # Advance time by the full burst (non-preemptive)
         current_time += selected.burst
         selected.remaining = 0
         
@@ -77,7 +68,6 @@ def run_sjf_non_preemptive(processes):
 
 
 if __name__ == "__main__":
-    # Test script similar to what was in sjfNon.py but following new rules
     from process import Process
     
     test_processes = [

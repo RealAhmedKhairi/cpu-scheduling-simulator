@@ -2,22 +2,12 @@ import copy
 
 
 def run_priority(processes, preemptive=True):
-    """Run priority scheduling.
 
-    Args:
-        processes: list of Process objects.
-        preemptive: if True, runs preemptive priority; if False, runs non-preemptive priority.
-
-    Returns:
-        tuple: (timeline, results)
-    """
-    # Rule: Always deepcopy
     ps = copy.deepcopy(processes)
     n = len(ps)
     if n == 0:
         return [], []
 
-    # Rule: Reset remaining and metrics at the start
     for p in ps:
         p.remaining = p.burst
         p.start = -1
@@ -33,8 +23,8 @@ def run_priority(processes, preemptive=True):
     segment_start = 0
     active_process = None
 
+    
     while completed < n:
-        # Rule: Handle the idle gap
         available = [p for p in ps if p.arrival <= current_time and p.remaining > 0]
 
         if not available:
@@ -54,14 +44,12 @@ def run_priority(processes, preemptive=True):
             current_time = next_arrival
             continue
 
-        # Priority Selection Logic
         if preemptive or active_process is None or active_process.remaining == 0:
             selected = min(available, key=lambda p: (p.priority, p.arrival, p.pid))
             active_process = selected
         else:
             selected = active_process
 
-        # Rule: Timeline segments sorted by start time and PIDs as strings
         if current_pid != selected.pid:
             if current_pid is not None:
                 timeline.append((str(current_pid), segment_start, current_time))
@@ -76,7 +64,6 @@ def run_priority(processes, preemptive=True):
         current_time += 1
 
         if selected.remaining == 0:
-            # Rule: Fill in all four fields
             selected.finish = current_time
             selected.turnaround = selected.finish - selected.arrival
             selected.waiting = selected.turnaround - selected.burst
